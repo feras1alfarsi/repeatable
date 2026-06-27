@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="description" content="Repeat audio and video files locally. Your files never leave your device.">
+<meta name="theme-color" content="#0f172a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Loopify">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.svg">
+<title>Loopify — Repeat Audio & Video Locally</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --bg2: #1e293b;
+    --bg3: #334155;
+    --surface: #1e293b;
+    --surface2: #273548;
+    --border: rgba(148,163,184,0.15);
+    --border2: rgba(148,163,184,0.3);
+    --text: #f1f5f9;
+    --text2: #94a3b8;
+    --text3: #64748b;
+    --accent: #6366f1;
+    --accent2: #818cf8;
+    --accent-bg: rgba(99,102,241,0.12);
+    --accent-border: rgba(99,102,241,0.4);
+    --success: #10b981;
+    --success-bg: rgba(16,185,129,0.1);
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --radius-lg: 16px;
+    --transition: 0.2s ease;
+  }
+  [data-theme="light"] {
+    --bg: #f8fafc;
+    --bg2: #ffffff;
+    --bg3: #e2e8f0;
+    --surface: #ffffff;
+    --surface2: #f1f5f9;
+    --border: rgba(15,23,42,0.1);
+    --border2: rgba(15,23,42,0.2);
+    --text: #0f172a;
+    --text2: #475569;
+    --text3: #94a3b8;
+    --accent: #4f46e5;
+    --accent2: #6366f1;
+    --accent-bg: rgba(79,70,229,0.08);
+    --accent-border: rgba(79,70,229,0.35);
+    --success: #059669;
+    --success-bg: rgba(5,150,105,0.08);
+    --warning: #d97706;
+    --danger: #dc2626;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    transition: background var(--transition), color var(--transition);
+    overflow-x: hidden;
+  }
+  [dir="rtl"] { font-family: 'Segoe UI', 'Tahoma', system-ui, sans-serif; }
+
+  /* Layout */
+  #app { max-width: 680px; margin: 0 auto; padding: 0 16px 80px; }
+  
+  /* Header */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 0 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: var(--accent); display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .logo-icon svg { width: 20px; height: 20px; fill: white; }
+  .logo-text { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+  .logo-text span { color: var(--accent2); }
+  .header-actions { display: flex; gap: 8px; }
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border); background: var(--surface2);
+    color: var(--text2); cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all var(--transition); font-size: 18px;
+  }
+  .icon-btn:hover { border-color: var(--border2); color: var(--text); background: var(--bg3); }
+
+  /* Privacy badge */
+  .privacy-badge {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--success-bg); border: 1px solid rgba(16,185,129,0.25);
+    border-radius: var(--radius-sm); padding: 10px 14px;
+    font-size: 13px; color: var(--success); margin-bottom: 20px;
+  }
+  .privacy-badge svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+  /* Drop zone */
+  #drop-zone {
+    border: 2px dashed var(--border2); border-radius: var(--radius-lg);
+    padding: 48px 24px; text-align: center; cursor: pointer;
+    transition: all var(--transition); background: var(--surface);
+    position: relative; overflow: hidden;
+  }
+  #drop-zone:hover, #drop-zone.dragover {
+    border-color: var(--accent); background: var(--accent-bg);
+  }
+  #drop-zone.dragover { transform: scale(1.01); }
+  #drop-zone input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .drop-icon {
+    width: 56px; height: 56px; border-radius: 14px;
+    background: var(--accent-bg); border: 1px solid var(--accent-border);
+    display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;
+  }
+  .drop-icon svg { width: 28px; height: 28px; stroke: var(--accent2); fill: none; stroke-width: 1.5; }
+  .drop-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+  .drop-sub { font-size: 13px; color: var(--text3); margin-bottom: 16px; }
+  .browse-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--accent); color: white; border: none;
+    padding: 10px 20px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500;
+    cursor: pointer; pointer-events: none; transition: background var(--transition);
+  }
+  #drop-zone:hover .browse-btn { background: var(--accent2); }
+  .format-tags { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 16px; }
+  .tag {
+    font-size: 11px; padding: 3px 8px; border-radius: 4px;
+    background: var(--bg3); color: var(--text3); border: 1px solid var(--border);
+    font-weight: 500; letter-spacing: 0.3px;
+  }
+
+  /* File info card */
+  #file-info {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 16px; margin-bottom: 16px; display: none;
+  }
+  .file-info-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .file-type-badge {
+    width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.5px; flex-shrink: 0;
+  }
+  .file-type-badge.audio { background: rgba(99,102,241,0.15); color: var(--accent2); }
+  .file-type-badge.video { background: rgba(245,158,11,0.15); color: var(--warning); }
+  .file-meta { flex: 1; min-width: 0; }
+  .file-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .file-details { font-size: 12px; color: var(--text3); margin-top: 3px; }
+  .change-file-btn {
+    font-size: 12px; color: var(--text3); cursor: pointer; background: none; border: none;
+    padding: 4px 8px; border-radius: var(--radius-sm); transition: all var(--transition);
+  }
+  .change-file-btn:hover { color: var(--text); background: var(--bg3); }
+
+  /* Media player */
+  #media-container {
+    background: #000; border-radius: var(--radius); overflow: hidden;
+    margin-bottom: 16px; display: none; position: relative;
+  }
+  #media-container.audio-mode {
+    background: var(--surface2); display: flex; align-items: center; justify-content: center; min-height: 80px;
+  }
+  #media-container video { width: 100%; display: block; max-height: 320px; }
+  #media-container audio { display: none; }
+  .audio-waveform {
+    display: flex; align-items: center; justify-content: center; gap: 3px; padding: 20px;
+  }
+  .wave-bar {
+    width: 3px; border-radius: 2px; background: var(--accent);
+    animation: wave 1.2s ease-in-out infinite;
+    transition: height 0.1s;
+  }
+  .wave-bar:nth-child(2) { animation-delay: 0.1s; }
+  .wave-bar:nth-child(3) { animation-delay: 0.2s; }
+  .wave-bar:nth-child(4) { animation-delay: 0.3s; }
+  .wave-bar:nth-child(5) { animation-delay: 0.4s; }
+  .wave-bar:nth-child(6) { animation-delay: 0.3s; }
+  .wave-bar:nth-child(7) { animation-delay: 0.2s; }
+  .wave-bar:nth-child(8) { animation-delay: 0.1s; }
+  .wave-bar:nth-child(9) { animation-delay: 0s; }
+  @keyframes wave {
+    0%, 100% { height: 8px; opacity: 0.4; }
+    50% { height: 32px; opacity: 1; }
+  }
+  .paused .wave-bar { animation-play-state: paused; }
+
+  /* Card sections */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 20px; margin-bottom: 12px;
+  }
+  .card-title {
+    font-size: 12px; font-weight: 600; color: var(--text3);
+    text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 16px;
+  }
+
+  /* Repeat count */
+  .repeat-row { display: flex; align-items: center; gap: 12px; }
+  .repeat-display {
+    font-size: 40px; font-weight: 800; color: var(--accent2);
+    letter-spacing: -1px; min-width: 80px; text-align: center; line-height: 1;
+  }
+  .repeat-controls { flex: 1; }
+  .repeat-slider-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  input[type="range"] {
+    -webkit-appearance: none; flex: 1; height: 4px;
+    background: var(--bg3); border-radius: 2px; outline: none; cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 18px; height: 18px;
+    border-radius: 50%; background: var(--accent); cursor: pointer;
+    box-shadow: 0 0 0 3px var(--accent-bg);
+    transition: transform var(--transition);
+  }
+  input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.2); }
+  .range-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text3); }
+  .repeat-input-row { display: flex; align-items: center; gap: 8px; }
+  .repeat-input-row label { font-size: 13px; color: var(--text2); white-space: nowrap; }
+  input[type="number"] {
+    width: 80px; padding: 8px 10px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border2); background: var(--bg3);
+    color: var(--text); font-size: 14px; font-weight: 600; text-align: center; outline: none;
+    transition: border-color var(--transition);
+  }
+  input[type="number"]:focus { border-color: var(--accent); }
+  .repeat-presets { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .preset-btn {
+    padding: 5px 12px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500;
+    border: 1px solid var(--border); background: var(--bg3); color: var(--text2);
+    cursor: pointer; transition: all var(--transition);
+  }
+  .preset-btn:hover, .preset-btn.active { border-color: var(--accent); color: var(--accent2); background: var(--accent-bg); }
+
+  /* AB Loop */
+  .ab-row { display: flex; gap: 12px; align-items: flex-end; }
+  .ab-field { flex: 1; }
+  .ab-field label { font-size: 12px; color: var(--text3); display: block; margin-bottom: 6px; }
+  .ab-field input[type="text"] {
+    width: 100%; padding: 8px 12px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border2); background: var(--bg3); color: var(--text);
+    font-size: 14px; font-family: 'Courier New', monospace; outline: none;
+    transition: border-color var(--transition);
+  }
+  .ab-field input[type="text"]:focus { border-color: var(--accent); }
+  .ab-toggle {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+    padding: 10px 14px; border-radius: var(--radius-sm);
+    background: var(--surface2); border: 1px solid var(--border); cursor: pointer;
+  }
+  .ab-toggle input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; cursor: pointer; }
+  .ab-toggle label { font-size: 14px; font-weight: 500; cursor: pointer; flex: 1; }
+  .ab-toggle .ab-badge {
+    font-size: 10px; padding: 2px 6px; border-radius: 4px;
+    background: var(--accent-bg); color: var(--accent2); font-weight: 700; letter-spacing: 0.5px;
+  }
+  .set-ab-btn {
+    padding: 8px 14px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500;
+    border: 1px solid var(--accent-border); background: var(--accent-bg); color: var(--accent2);
+    cursor: pointer; transition: all var(--transition); white-space: nowrap;
+  }
+  .set-ab-btn:hover { background: var(--accent); color: white; }
+
+  /* Delay between reps */
+  .delay-options { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .delay-opt {
+    padding: 8px 4px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 600;
+    border: 1px solid var(--border); background: var(--bg3); color: var(--text2);
+    cursor: pointer; text-align: center; transition: all var(--transition);
+  }
+  .delay-opt:hover, .delay-opt.selected { border-color: var(--accent); color: var(--accent2); background: var(--accent-bg); }
+
+  /* Progress */
+  .progress-stats {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px;
+  }
+  @media (max-width: 480px) { .progress-stats { grid-template-columns: repeat(2, 1fr); } }
+  .stat-cell {
+    background: var(--surface2); border-radius: var(--radius-sm); padding: 12px;
+    text-align: center; border: 1px solid var(--border);
+  }
+  .stat-val { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+  .stat-lbl { font-size: 11px; color: var(--text3); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+  .progress-bar-wrap {
+    background: var(--bg3); border-radius: 4px; height: 8px; overflow: hidden; margin-bottom: 8px;
+  }
+  .progress-bar { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.5s ease; width: 0%; }
+  .progress-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--text3); }
+
+  /* Time scrubber */
+  .scrubber-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+  .time-label { font-size: 12px; color: var(--text3); font-family: monospace; min-width: 40px; }
+
+  /* Playback controls */
+  .controls-row {
+    display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 16px;
+  }
+  .ctrl-btn {
+    border: 1px solid var(--border); background: var(--surface2);
+    color: var(--text2); border-radius: var(--radius-sm); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; transition: all var(--transition);
+  }
+  .ctrl-btn:hover { border-color: var(--border2); color: var(--text); background: var(--bg3); }
+  .ctrl-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .ctrl-btn.sm { width: 40px; height: 40px; }
+  .ctrl-btn.md { width: 48px; height: 48px; border-radius: 50%; }
+  .ctrl-btn.play-main {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: var(--accent); border-color: var(--accent); color: white;
+  }
+  .ctrl-btn.play-main:hover { background: var(--accent2); border-color: var(--accent2); }
+  .ctrl-btn svg { width: 20px; height: 20px; fill: currentColor; }
+  .ctrl-btn.play-main svg { width: 26px; height: 26px; }
+  .ctrl-btn.sm svg { width: 18px; height: 18px; }
+
+  /* Speed control */
+  .speed-row { display: flex; align-items: center; gap: 8px; justify-content: center; }
+  .speed-btn {
+    padding: 5px 10px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 600;
+    border: 1px solid var(--border); background: var(--bg3); color: var(--text2);
+    cursor: pointer; transition: all var(--transition);
+  }
+  .speed-btn:hover, .speed-btn.active { border-color: var(--accent); color: var(--accent2); background: var(--accent-bg); }
+  .speed-label { font-size: 12px; color: var(--text3); margin: 0 4px; }
+
+  /* Status badge */
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+    border-radius: 20px; font-size: 12px; font-weight: 600; margin-bottom: 12px;
+  }
+  .status-badge.idle { background: var(--bg3); color: var(--text3); }
+  .status-badge.playing { background: var(--success-bg); color: var(--success); }
+  .status-badge.paused { background: rgba(245,158,11,0.1); color: var(--warning); }
+  .status-badge.complete { background: var(--accent-bg); color: var(--accent2); }
+  .status-badge.delay { background: rgba(245,158,11,0.1); color: var(--warning); }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .status-dot.pulse { animation: pulse-dot 1s ease-in-out infinite; }
+  @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  /* Section divider */
+  .section-gap { margin-bottom: 12px; }
+
+  /* Toasts */
+  #toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; }
+  .toast {
+    background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius-sm);
+    padding: 10px 16px; font-size: 13px; color: var(--text); box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    animation: slide-in 0.3s ease; max-width: 280px;
+  }
+  @keyframes slide-in { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+  /* Install banner */
+  #install-banner {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--surface); border-top: 1px solid var(--border);
+    padding: 16px 20px; display: none; align-items: center; gap: 12px; z-index: 100;
+  }
+  #install-banner .install-text { flex: 1; font-size: 14px; }
+  #install-banner .install-text span { display: block; font-size: 12px; color: var(--text3); margin-top: 2px; }
+  .install-btn {
+    padding: 9px 18px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600;
+    background: var(--accent); color: white; border: none; cursor: pointer;
+    white-space: nowrap; transition: background var(--transition);
+  }
+  .install-btn:hover { background: var(--accent2); }
+  .dismiss-btn { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 20px; padding: 4px; }
+
+  /* Lang toggle */
+  .lang-toggle {
+    font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border); background: var(--surface2); color: var(--text2);
+    cursor: pointer; transition: all var(--transition);
+  }
+  .lang-toggle:hover { border-color: var(--border2); color: var(--text); }
+
+  /* RTL specifics */
+  [dir="rtl"] .repeat-row { flex-direction: row; }
+  [dir="rtl"] .header-actions { flex-direction: row-reverse; }
+  [dir="rtl"] .privacy-badge { flex-direction: row; }
+  [dir="rtl"] #toast-container { right: auto; left: 24px; }
+
+  /* Completion overlay */
+  #complete-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    z-index: 200; align-items: center; justify-content: center; padding: 24px;
+  }
+  #complete-overlay.show { display: flex; }
+  .complete-card {
+    background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius-lg);
+    padding: 32px; text-align: center; max-width: 360px; width: 100%;
+  }
+  .complete-icon {
+    width: 64px; height: 64px; border-radius: 50%; background: var(--success-bg);
+    display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;
+  }
+  .complete-icon svg { width: 32px; height: 32px; stroke: var(--success); fill: none; stroke-width: 2.5; }
+  .complete-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+  .complete-sub { font-size: 14px; color: var(--text2); margin-bottom: 24px; }
+  .complete-actions { display: flex; gap: 10px; justify-content: center; }
+  .complete-actions button {
+    padding: 10px 20px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all var(--transition);
+  }
+  .btn-primary { background: var(--accent); color: white; border: none; }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--bg2); }
+
+  /* Delay countdown */
+  .delay-countdown {
+    font-size: 13px; color: var(--warning); text-align: center;
+    padding: 8px; display: none;
+  }
+  .delay-countdown.show { display: block; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+      </div>
+      <span class="logo-text">Loop<span>ify</span></span>
+    </div>
+    <div class="header-actions">
+      <button class="lang-toggle" id="lang-btn" onclick="toggleLang()" title="Switch language">عربي</button>
+      <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
+    </div>
+  </header>
+
+  <!-- Privacy badge -->
+  <div class="privacy-badge">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    </svg>
+    <span id="privacy-text">Your files never leave your device. Everything is processed locally in your browser.</span>
+  </div>
+
+  <!-- Drop Zone -->
+  <div id="drop-zone" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+    <input type="file" id="file-input" accept="audio/mp3,audio/wav,audio/m4a,audio/aac,audio/ogg,video/mp4,video/quicktime,video/webm,.mp3,.wav,.m4a,.aac,.ogg,.mp4,.mov,.webm" onchange="onFileSelect(event)">
+    <div class="drop-icon">
+      <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+      </svg>
+    </div>
+    <div class="drop-title" id="drop-title">Drop your file here</div>
+    <div class="drop-sub" id="drop-sub">or click to browse from your device</div>
+    <div class="browse-btn" id="browse-btn-label">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3H19a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M12 17V7m-4 4l4-4 4 4"/></svg>
+      <span id="browse-label">Choose File</span>
+    </div>
+    <div class="format-tags">
+      <span class="tag">MP3</span><span class="tag">WAV</span><span class="tag">M4A</span>
+      <span class="tag">AAC</span><span class="tag">OGG</span><span class="tag">MP4</span>
+      <span class="tag">MOV</span><span class="tag">WEBM</span>
+    </div>
+  </div>
+
+  <!-- File info -->
+  <div id="file-info">
+    <div class="file-info-header">
+      <div class="file-type-badge" id="file-type-badge">MP3</div>
+      <div class="file-meta">
+        <div class="file-name" id="file-name-display">filename.mp3</div>
+        <div class="file-details" id="file-details-display">0 MB · 0:00</div>
+      </div>
+      <button class="change-file-btn" onclick="changeFile()" id="change-file-text">Change</button>
+    </div>
+  </div>
+
+  <!-- Media container -->
+  <div id="media-container">
+    <video id="video-el" preload="metadata"></video>
+    <audio id="audio-el" preload="metadata"></audio>
+    <div class="audio-waveform paused" id="audio-viz">
+      <div class="wave-bar" style="height:12px"></div>
+      <div class="wave-bar" style="height:20px"></div>
+      <div class="wave-bar" style="height:28px"></div>
+      <div class="wave-bar" style="height:36px"></div>
+      <div class="wave-bar" style="height:32px"></div>
+      <div class="wave-bar" style="height:24px"></div>
+      <div class="wave-bar" style="height:32px"></div>
+      <div class="wave-bar" style="height:20px"></div>
+      <div class="wave-bar" style="height:12px"></div>
+    </div>
+  </div>
+
+  <!-- Repeat Count Card -->
+  <div class="card section-gap" id="repeat-card" style="display:none">
+    <div class="card-title" id="repeat-card-title">REPEAT COUNT</div>
+    <div class="repeat-row">
+      <div class="repeat-display" id="repeat-display">10</div>
+      <div class="repeat-controls">
+        <div class="repeat-slider-row">
+          <input type="range" id="repeat-slider" min="1" max="1000" value="10" step="1" oninput="onSliderChange(this.value)">
+        </div>
+        <div class="range-labels"><span>1</span><span>500</span><span>1000</span></div>
+        <div class="repeat-input-row" style="margin-top:10px">
+          <label id="exact-label">Exact count:</label>
+          <input type="number" id="repeat-input" min="1" max="1000" value="10" oninput="onInputChange(this.value)">
+        </div>
+      </div>
+    </div>
+    <div class="repeat-presets">
+      <button class="preset-btn" onclick="setRepeat(5)">×5</button>
+      <button class="preset-btn" onclick="setRepeat(10)" id="p10">×10</button>
+      <button class="preset-btn" onclick="setRepeat(25)">×25</button>
+      <button class="preset-btn" onclick="setRepeat(50)">×50</button>
+      <button class="preset-btn" onclick="setRepeat(100)">×100</button>
+      <button class="preset-btn" onclick="setRepeat(250)">×250</button>
+      <button class="preset-btn" onclick="setRepeat(500)">×500</button>
+      <button class="preset-btn" onclick="setRepeat(1000)">×1000</button>
+    </div>
+  </div>
+
+  <!-- AB Loop Card -->
+  <div class="card section-gap" id="ab-card" style="display:none">
+    <div class="card-title" id="ab-card-title">A–B LOOP</div>
+    <div class="ab-toggle">
+      <input type="checkbox" id="ab-enabled" onchange="toggleAB()">
+      <label for="ab-enabled" id="ab-label">Loop a specific segment</label>
+      <span class="ab-badge">A–B</span>
+    </div>
+    <div id="ab-fields" style="display:none">
+      <div class="ab-row">
+        <div class="ab-field">
+          <label id="start-lbl">Start time (mm:ss)</label>
+          <input type="text" id="ab-start" placeholder="00:00" value="00:00" oninput="validateTime(this)">
+        </div>
+        <div class="ab-field">
+          <label id="end-lbl">End time (mm:ss)</label>
+          <input type="text" id="ab-end" placeholder="00:30" value="00:30" oninput="validateTime(this)">
+        </div>
+        <button class="set-ab-btn" onclick="setCurrentAsStart()" id="set-a-btn">Set A</button>
+        <button class="set-ab-btn" onclick="setCurrentAsEnd()" id="set-b-btn">Set B</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delay Card -->
+  <div class="card section-gap" id="delay-card" style="display:none">
+    <div class="card-title" id="delay-card-title">PAUSE BETWEEN REPETITIONS</div>
+    <div class="delay-options">
+      <button class="delay-opt selected" onclick="setDelay(0)" id="delay-0" data-val="0">None</button>
+      <button class="delay-opt" onclick="setDelay(5)" id="delay-5" data-val="5">5s</button>
+      <button class="delay-opt" onclick="setDelay(10)" id="delay-10" data-val="10">10s</button>
+      <button class="delay-opt" onclick="setDelay(30)" id="delay-30" data-val="30">30s</button>
+      <button class="delay-opt" onclick="setDelay(60)" id="delay-60" data-val="60">60s</button>
+    </div>
+  </div>
+
+  <!-- Playback & Progress Card -->
+  <div class="card" id="playback-card" style="display:none">
+    <div class="card-title" id="playback-card-title">PLAYBACK</div>
+
+    <div style="text-align:center; margin-bottom:12px">
+      <span class="status-badge idle" id="status-badge">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="status-text">Ready</span>
+      </span>
+    </div>
+
+    <!-- Scrubber -->
+    <div class="scrubber-row">
+      <span class="time-label" id="time-current">0:00</span>
+      <input type="range" id="scrubber" min="0" max="100" value="0" step="0.1" oninput="onScrub(this.value)" style="flex:1">
+      <span class="time-label" id="time-total" style="text-align:right">0:00</span>
+    </div>
+
+    <!-- Delay countdown -->
+    <div class="delay-countdown" id="delay-countdown">Next repetition in <strong id="countdown-num">5</strong>s...</div>
+
+    <!-- Controls -->
+    <div class="controls-row" style="margin-top:16px">
+      <button class="ctrl-btn sm" onclick="restartAll()" id="btn-restart" title="Restart" disabled>
+        <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+      </button>
+      <button class="ctrl-btn md" onclick="skipBack()" id="btn-back" title="Previous rep" disabled>
+        <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+      </button>
+      <button class="ctrl-btn play-main" onclick="togglePlay()" id="btn-play" title="Play/Pause" disabled>
+        <svg viewBox="0 0 24 24" id="play-icon"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+      <button class="ctrl-btn md" onclick="skipForward()" id="btn-fwd" title="Next rep" disabled>
+        <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+      </button>
+      <button class="ctrl-btn sm" onclick="stopPlayback()" id="btn-stop" title="Stop" disabled>
+        <svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
+      </button>
+    </div>
+
+    <!-- Speed -->
+    <div class="speed-row" style="margin-top:14px">
+      <span class="speed-label" id="speed-label">Speed:</span>
+      <button class="speed-btn" onclick="setSpeed(0.5)">0.5×</button>
+      <button class="speed-btn" onclick="setSpeed(0.75)">0.75×</button>
+      <button class="speed-btn active" id="speed-1" onclick="setSpeed(1)">1×</button>
+      <button class="speed-btn" onclick="setSpeed(1.25)">1.25×</button>
+      <button class="speed-btn" onclick="setSpeed(1.5)">1.5×</button>
+      <button class="speed-btn" onclick="setSpeed(2)">2×</button>
+    </div>
+
+    <!-- Progress stats -->
+    <div class="progress-stats" style="margin-top:20px">
+      <div class="stat-cell">
+        <div class="stat-val" id="stat-current">0</div>
+        <div class="stat-lbl" id="stat-current-lbl">Current</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-val" id="stat-total">10</div>
+        <div class="stat-lbl" id="stat-total-lbl">Total</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-val" id="stat-remaining">10</div>
+        <div class="stat-lbl" id="stat-remaining-lbl">Remaining</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-val" id="stat-eta">--:--</div>
+        <div class="stat-lbl" id="stat-eta-lbl">ETA</div>
+      </div>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="progress-bar-wrap" style="margin-top:12px">
+      <div class="progress-bar" id="overall-progress"></div>
+    </div>
+    <div class="progress-labels">
+      <span id="progress-pct">0%</span>
+      <span id="elapsed-lbl">Elapsed: 0:00</span>
+    </div>
+  </div>
+</div>
+
+<!-- Install banner -->
+<div id="install-banner">
+  <div class="install-text" id="install-text">
+    Install Loopify
+    <span id="install-sub">Add to your home screen for quick access</span>
+  </div>
+  <button class="install-btn" onclick="installApp()" id="install-btn-text">Install</button>
+  <button class="dismiss-btn" onclick="dismissInstall()">×</button>
+</div>
+
+<!-- Completion overlay -->
+<div id="complete-overlay">
+  <div class="complete-card">
+    <div class="complete-icon">
+      <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <div class="complete-title" id="complete-title">All Done!</div>
+    <div class="complete-sub" id="complete-sub">Completed all repetitions.</div>
+    <div class="complete-actions">
+      <button class="btn-secondary" onclick="closeComplete()" id="close-complete-btn">Close</button>
+      <button class="btn-primary" onclick="replayAll()" id="replay-btn">Replay</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let state = {
+  file: null,
+  isVideo: false,
+  duration: 0,
+  repeatCount: 10,
+  currentRep: 0,
+  isPlaying: false,
+  isPaused: false,
+  abEnabled: false,
+  abStart: 0,
+  abEnd: 0,
+  delaySeconds: 0,
+  speed: 1,
+  elapsedStart: null,
+  totalElapsed: 0,
+  delayTimer: null,
+  countdownTimer: null,
+  scrubbing: false,
+  lang: 'en',
+  theme: 'dark',
+  objectUrl: null,
+  startTime: null,
+};
+
+// ═══════════════════════════════════════════
+// I18N
+// ═══════════════════════════════════════════
+const i18n = {
+  en: {
+    privacy: "Your files never leave your device. Everything is processed locally in your browser.",
+    drop_title: "Drop your file here",
+    drop_sub: "or click to browse from your device",
+    browse_label: "Choose File",
+    change: "Change",
+    repeat_card_title: "REPEAT COUNT",
+    ab_card_title: "A–B LOOP",
+    delay_card_title: "PAUSE BETWEEN REPETITIONS",
+    playback_card_title: "PLAYBACK",
+    exact_label: "Exact count:",
+    ab_label: "Loop a specific segment",
+    start_lbl: "Start time (mm:ss)",
+    end_lbl: "End time (mm:ss)",
+    set_a_btn: "Set A",
+    set_b_btn: "Set B",
+    speed_label: "Speed:",
+    stat_current_lbl: "Current",
+    stat_total_lbl: "Total",
+    stat_remaining_lbl: "Remaining",
+    stat_eta_lbl: "ETA",
+    status_ready: "Ready",
+    status_playing: "Playing",
+    status_paused: "Paused",
+    status_delay: "Pausing...",
+    status_complete: "Complete",
+    complete_title: "All Done!",
+    complete_sub: "Completed all repetitions.",
+    close_btn: "Close",
+    replay_btn: "Replay",
+    next_rep: "Next repetition in",
+    install_text: "Install Loopify",
+    install_sub: "Add to your home screen for quick access",
+    install_btn: "Install",
+    elapsed: "Elapsed:",
+  },
+  ar: {
+    privacy: "ملفاتك لا تغادر جهازك أبداً. كل شيء يعمل محلياً في متصفحك.",
+    drop_title: "اسحب ملفك هنا",
+    drop_sub: "أو انقر للاستعراض من جهازك",
+    browse_label: "اختر ملف",
+    change: "تغيير",
+    repeat_card_title: "عدد التكرارات",
+    ab_card_title: "تكرار المقطع A–B",
+    delay_card_title: "توقف بين التكرارات",
+    playback_card_title: "التشغيل",
+    exact_label: "العدد الدقيق:",
+    ab_label: "تكرار مقطع محدد",
+    start_lbl: "وقت البداية (دد:ثث)",
+    end_lbl: "وقت النهاية (دد:ثث)",
+    set_a_btn: "تعيين A",
+    set_b_btn: "تعيين B",
+    speed_label: "السرعة:",
+    stat_current_lbl: "الحالية",
+    stat_total_lbl: "المجموع",
+    stat_remaining_lbl: "المتبقية",
+    stat_eta_lbl: "الوقت المتبقي",
+    status_ready: "جاهز",
+    status_playing: "يُشغّل",
+    status_paused: "متوقف مؤقتاً",
+    status_delay: "في انتظار...",
+    status_complete: "اكتمل",
+    complete_title: "تم بنجاح!",
+    complete_sub: "اكتملت جميع التكرارات.",
+    close_btn: "إغلاق",
+    replay_btn: "إعادة التشغيل",
+    next_rep: "التكرار التالي خلال",
+    install_text: "تثبيت Loopify",
+    install_sub: "أضف إلى الشاشة الرئيسية للوصول السريع",
+    install_btn: "تثبيت",
+    elapsed: "الوقت المنقضي:",
+  }
+};
+
+function t(key) { return i18n[state.lang][key] || i18n.en[key]; }
+
+function applyLang() {
+  const dir = state.lang === 'ar' ? 'rtl' : 'ltr';
+  document.documentElement.setAttribute('dir', dir);
+  document.documentElement.setAttribute('lang', state.lang);
+  document.getElementById('lang-btn').textContent = state.lang === 'en' ? 'عربي' : 'English';
+  document.getElementById('privacy-text').textContent = t('privacy');
+  document.getElementById('drop-title').textContent = t('drop_title');
+  document.getElementById('drop-sub').textContent = t('drop_sub');
+  document.getElementById('browse-label').textContent = t('browse_label');
+  document.getElementById('change-file-text').textContent = t('change');
+  document.getElementById('repeat-card-title').textContent = t('repeat_card_title');
+  document.getElementById('ab-card-title').textContent = t('ab_card_title');
+  document.getElementById('delay-card-title').textContent = t('delay_card_title');
+  document.getElementById('playback-card-title').textContent = t('playback_card_title');
+  document.getElementById('exact-label').textContent = t('exact_label');
+  document.getElementById('ab-label').textContent = t('ab_label');
+  document.getElementById('start-lbl').textContent = t('start_lbl');
+  document.getElementById('end-lbl').textContent = t('end_lbl');
+  document.getElementById('set-a-btn').textContent = t('set_a_btn');
+  document.getElementById('set-b-btn').textContent = t('set_b_btn');
+  document.getElementById('speed-label').textContent = t('speed_label');
+  document.getElementById('stat-current-lbl').textContent = t('stat_current_lbl');
+  document.getElementById('stat-total-lbl').textContent = t('stat_total_lbl');
+  document.getElementById('stat-remaining-lbl').textContent = t('stat_remaining_lbl');
+  document.getElementById('stat-eta-lbl').textContent = t('stat_eta_lbl');
+  document.getElementById('complete-title').textContent = t('complete_title');
+  document.getElementById('complete-sub').textContent = t('complete_sub');
+  document.getElementById('close-complete-btn').textContent = t('close_btn');
+  document.getElementById('replay-btn').textContent = t('replay_btn');
+  document.getElementById('install-text').childNodes[0].textContent = t('install_text');
+  document.getElementById('install-sub').textContent = t('install_sub');
+  document.getElementById('install-btn-text').textContent = t('install_btn');
+  updateStatusBadge();
+}
+
+function toggleLang() {
+  state.lang = state.lang === 'en' ? 'ar' : 'en';
+  applyLang();
+}
+
+// ═══════════════════════════════════════════
+// THEME
+// ═══════════════════════════════════════════
+function toggleTheme() {
+  state.theme = state.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', state.theme === 'light' ? 'light' : '');
+  document.getElementById('theme-btn').textContent = state.theme === 'dark' ? '🌙' : '☀️';
+}
+
+// ═══════════════════════════════════════════
+// FILE HANDLING
+// ═══════════════════════════════════════════
+function onDragOver(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.add('dragover');
+}
+function onDragLeave(e) {
+  document.getElementById('drop-zone').classList.remove('dragover');
+}
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) loadFile(file);
+}
+function onFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) loadFile(file);
+}
+function changeFile() {
+  stopPlayback();
+  document.getElementById('file-input').value = '';
+  document.getElementById('file-input').click();
+}
+
+function loadFile(file) {
+  if (state.objectUrl) URL.revokeObjectURL(state.objectUrl);
+  state.file = file;
+  state.objectUrl = URL.createObjectURL(file);
+  
+  const ext = file.name.split('.').pop().toUpperCase();
+  const videoExts = ['MP4', 'MOV', 'WEBM'];
+  state.isVideo = videoExts.includes(ext) || file.type.startsWith('video/');
+
+  // Show file info
+  const badge = document.getElementById('file-type-badge');
+  badge.textContent = ext;
+  badge.className = 'file-type-badge ' + (state.isVideo ? 'video' : 'audio');
+  document.getElementById('file-name-display').textContent = file.name;
+  const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+  document.getElementById('file-details-display').textContent = `${sizeMB} MB · Loading...`;
+  document.getElementById('file-info').style.display = 'block';
+  document.getElementById('drop-zone').style.display = 'none';
+
+  // Set up media
+  const mediaEl = getMedia();
+  mediaEl.src = state.objectUrl;
+  mediaEl.load();
+  mediaEl.playbackRate = state.speed;
+  
+  mediaEl.onloadedmetadata = () => {
+    state.duration = mediaEl.duration;
+    const dur = formatTime(state.duration);
+    const sizeMB2 = (file.size / 1024 / 1024).toFixed(1);
+    document.getElementById('file-details-display').textContent = `${sizeMB2} MB · ${dur}`;
+    document.getElementById('time-total').textContent = dur;
+    document.getElementById('ab-end').value = dur;
+    state.abEnd = state.duration;
+
+    // Show media player
+    const mc = document.getElementById('media-container');
+    mc.style.display = state.isVideo ? 'block' : 'flex';
+    mc.className = state.isVideo ? '' : 'audio-mode';
+    document.getElementById('video-el').style.display = state.isVideo ? 'block' : 'none';
+
+    // Show controls
+    ['repeat-card','ab-card','delay-card','playback-card'].forEach(id => {
+      document.getElementById(id).style.display = 'block';
+    });
+    enableControls(true);
+    updateStats();
+  };
+
+  mediaEl.onerror = () => showToast('⚠️ Could not load this file format in your browser.');
+}
+
+function getMedia() {
+  return state.isVideo ? document.getElementById('video-el') : document.getElementById('audio-el');
+}
+
+// ═══════════════════════════════════════════
+// REPEAT CONTROLS
+// ═══════════════════════════════════════════
+function onSliderChange(val) {
+  val = Math.max(1, Math.min(1000, parseInt(val)));
+  state.repeatCount = val;
+  document.getElementById('repeat-display').textContent = val;
+  document.getElementById('repeat-input').value = val;
+  updateStats();
+  highlightPreset(val);
+}
+function onInputChange(val) {
+  val = Math.max(1, Math.min(1000, parseInt(val) || 1));
+  state.repeatCount = val;
+  document.getElementById('repeat-display').textContent = val;
+  document.getElementById('repeat-slider').value = val;
+  updateStats();
+  highlightPreset(val);
+}
+function setRepeat(n) {
+  state.repeatCount = n;
+  document.getElementById('repeat-display').textContent = n;
+  document.getElementById('repeat-slider').value = n;
+  document.getElementById('repeat-input').value = n;
+  updateStats();
+  highlightPreset(n);
+}
+function highlightPreset(n) {
+  document.querySelectorAll('.preset-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.textContent.replace('×','')) === n);
+  });
+}
+
+// ═══════════════════════════════════════════
+// AB LOOP
+// ═══════════════════════════════════════════
+function toggleAB() {
+  state.abEnabled = document.getElementById('ab-enabled').checked;
+  document.getElementById('ab-fields').style.display = state.abEnabled ? 'block' : 'none';
+  if (state.abEnabled) parseABTimes();
+}
+function validateTime(input) {
+  const val = input.value.replace(/[^0-9:]/g,'');
+  input.value = val;
+  parseABTimes();
+}
+function parseABTimes() {
+  state.abStart = parseTimeString(document.getElementById('ab-start').value) || 0;
+  state.abEnd = parseTimeString(document.getElementById('ab-end').value) || state.duration;
+}
+function parseTimeString(s) {
+  const parts = s.split(':').map(Number);
+  if (parts.length === 2) return parts[0]*60 + parts[1];
+  if (parts.length === 3) return parts[0]*3600 + parts[1]*60 + parts[2];
+  return parseFloat(s) || 0;
+}
+function setCurrentAsStart() {
+  const t = getMedia().currentTime;
+  state.abStart = t;
+  document.getElementById('ab-start').value = formatTime(t);
+}
+function setCurrentAsEnd() {
+  const t = getMedia().currentTime;
+  state.abEnd = t;
+  document.getElementById('ab-end').value = formatTime(t);
+}
+
+// ═══════════════════════════════════════════
+// DELAY
+// ═══════════════════════════════════════════
+function setDelay(seconds) {
+  state.delaySeconds = seconds;
+  document.querySelectorAll('.delay-opt').forEach(b => {
+    b.classList.toggle('selected', parseInt(b.dataset.val) === seconds);
+  });
+}
+
+// ═══════════════════════════════════════════
+// PLAYBACK
+// ═══════════════════════════════════════════
+function togglePlay() {
+  if (!state.file) return;
+  if (state.isPlaying && !state.isPaused) {
+    pausePlayback();
+  } else if (state.isPaused) {
+    resumePlayback();
+  } else {
+    startPlayback();
+  }
+}
+
+function startPlayback() {
+  state.currentRep = 0;
+  state.totalElapsed = 0;
+  state.startTime = Date.now();
+  playNextRep();
+}
+
+function playNextRep() {
+  if (state.currentRep >= state.repeatCount) {
+    onComplete();
+    return;
+  }
+  state.currentRep++;
+  state.isPlaying = true;
+  state.isPaused = false;
+  
+  const media = getMedia();
+  const start = state.abEnabled ? state.abStart : 0;
+  const end = state.abEnabled ? state.abEnd : state.duration;
+  
+  media.currentTime = start;
+  media.playbackRate = state.speed;
+  
+  media.ontimeupdate = () => {
+    if (!state.scrubbing) {
+      const pos = media.currentTime;
+      const pct = state.duration > 0 ? (pos / state.duration) * 100 : 0;
+      document.getElementById('scrubber').value = pct;
+      document.getElementById('time-current').textContent = formatTime(pos);
+    }
+    updateElapsed();
+    updateETA();
+    
+    // AB loop boundary check
+    if (state.abEnabled && media.currentTime >= end - 0.1) {
+      onRepEnd();
+    }
+  };
+  
+  media.onended = () => {
+    if (!state.abEnabled) onRepEnd();
+  };
+  
+  media.play().catch(() => {});
+  document.getElementById('audio-viz').classList.remove('paused');
+  updateControls();
+  updateStats();
+  updateStatusBadge('playing');
+}
+
+function onRepEnd() {
+  const media = getMedia();
+  media.pause();
+  document.getElementById('audio-viz').classList.add('paused');
+
+  // Accumulate elapsed time for this rep
+  const segLen = state.abEnabled ? (state.abEnd - state.abStart) : state.duration;
+  state.totalElapsed += segLen / state.speed;
+  
+  if (state.currentRep >= state.repeatCount) {
+    onComplete();
+    return;
+  }
+  
+  if (state.delaySeconds > 0) {
+    startDelay();
+  } else {
+    playNextRep();
+  }
+}
+
+function startDelay() {
+  let remaining = state.delaySeconds;
+  state.isPlaying = true;
+  state.isPaused = false;
+  updateStatusBadge('delay');
+  
+  const countdown = document.getElementById('delay-countdown');
+  const num = document.getElementById('countdown-num');
+  countdown.classList.add('show');
+  num.textContent = remaining;
+  
+  state.countdownTimer = setInterval(() => {
+    remaining--;
+    num.textContent = remaining;
+    if (remaining <= 0) {
+      clearInterval(state.countdownTimer);
+      countdown.classList.remove('show');
+      playNextRep();
+    }
+  }, 1000);
+}
+
+function pausePlayback() {
+  if (state.countdownTimer) { clearInterval(state.countdownTimer); document.getElementById('delay-countdown').classList.remove('show'); }
+  getMedia().pause();
+  state.isPaused = true;
+  document.getElementById('audio-viz').classList.add('paused');
+  updateStatusBadge('paused');
+  updateControls();
+}
+
+function resumePlayback() {
+  state.isPaused = false;
+  if (state.delaySeconds > 0 && !getMedia().currentTime) {
+    startDelay();
+  } else {
+    getMedia().play().catch(() => {});
+    document.getElementById('audio-viz').classList.remove('paused');
+    updateStatusBadge('playing');
+    updateControls();
+  }
+}
+
+function stopPlayback() {
+  if (state.countdownTimer) clearInterval(state.countdownTimer);
+  if (state.delayTimer) clearTimeout(state.delayTimer);
+  document.getElementById('delay-countdown').classList.remove('show');
+  
+  const media = getMedia();
+  media.pause();
+  media.currentTime = 0;
+  media.ontimeupdate = null;
+  media.onended = null;
+  
+  state.isPlaying = false;
+  state.isPaused = false;
+  state.currentRep = 0;
+  
+  document.getElementById('audio-viz').classList.add('paused');
+  document.getElementById('scrubber').value = 0;
+  document.getElementById('time-current').textContent = '0:00';
+  updateStatusBadge('idle');
+  updateControls();
+  updateStats();
+}
+
+function restartAll() {
+  stopPlayback();
+  setTimeout(startPlayback, 50);
+}
+
+function skipBack() {
+  if (state.currentRep > 1) {
+    state.currentRep = Math.max(0, state.currentRep - 2);
+    getMedia().pause();
+    getMedia().ontimeupdate = null;
+    getMedia().onended = null;
+    playNextRep();
+  }
+}
+
+function skipForward() {
+  if (state.currentRep < state.repeatCount) {
+    getMedia().pause();
+    getMedia().ontimeupdate = null;
+    getMedia().onended = null;
+    onRepEnd();
+  }
+}
+
+function onComplete() {
+  state.isPlaying = false;
+  state.isPaused = false;
+  getMedia().pause();
+  document.getElementById('audio-viz').classList.add('paused');
+  updateStatusBadge('complete');
+  updateStats();
+  updateControls();
+  document.getElementById('overall-progress').style.width = '100%';
+  document.getElementById('progress-pct').textContent = '100%';
+  document.getElementById('stat-current').textContent = state.repeatCount;
+  document.getElementById('stat-remaining').textContent = '0';
+  document.getElementById('complete-overlay').classList.add('show');
+}
+
+function closeComplete() {
+  document.getElementById('complete-overlay').classList.remove('show');
+}
+
+function replayAll() {
+  closeComplete();
+  stopPlayback();
+  setTimeout(startPlayback, 50);
+}
+
+// ═══════════════════════════════════════════
+// SCRUBBING
+// ═══════════════════════════════════════════
+const scrubberEl = document.getElementById('scrubber');
+scrubberEl.addEventListener('mousedown', () => state.scrubbing = true);
+scrubberEl.addEventListener('touchstart', () => state.scrubbing = true, {passive:true});
+scrubberEl.addEventListener('mouseup', () => state.scrubbing = false);
+scrubberEl.addEventListener('touchend', () => state.scrubbing = false);
+
+function onScrub(pct) {
+  if (!state.file) return;
+  const time = (pct / 100) * state.duration;
+  getMedia().currentTime = time;
+  document.getElementById('time-current').textContent = formatTime(time);
+}
+
+// ═══════════════════════════════════════════
+// SPEED
+// ═══════════════════════════════════════════
+function setSpeed(s) {
+  state.speed = s;
+  if (state.file) getMedia().playbackRate = s;
+  document.querySelectorAll('.speed-btn').forEach(b => {
+    b.classList.toggle('active', parseFloat(b.textContent) === s);
+  });
+}
+
+// ═══════════════════════════════════════════
+// UI UPDATES
+// ═══════════════════════════════════════════
+function updateStats() {
+  const current = state.currentRep;
+  const total = state.repeatCount;
+  const remaining = Math.max(0, total - current);
+  const pct = total > 0 ? Math.round((current / total) * 100) : 0;
+  
+  document.getElementById('stat-current').textContent = current;
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-remaining').textContent = remaining;
+  document.getElementById('overall-progress').style.width = pct + '%';
+  document.getElementById('progress-pct').textContent = pct + '%';
+}
+
+function updateETA() {
+  if (!state.isPlaying || state.currentRep === 0) return;
+  const elapsed = (Date.now() - state.startTime) / 1000;
+  const perRep = elapsed / state.currentRep;
+  const repsLeft = state.repeatCount - state.currentRep;
+  const segRemaining = getMedia().duration > 0 ? ((state.abEnabled ? state.abEnd : state.duration) - getMedia().currentTime) / state.speed : 0;
+  const eta = repsLeft * perRep + segRemaining + repsLeft * state.delaySeconds;
+  document.getElementById('stat-eta').textContent = eta > 0 ? formatTime(Math.round(eta)) : '--:--';
+}
+
+function updateElapsed() {
+  if (!state.startTime) return;
+  const elapsed = (Date.now() - state.startTime) / 1000;
+  document.getElementById('elapsed-lbl').textContent = t('elapsed') + ' ' + formatTime(Math.round(elapsed));
+}
+
+function updateStatusBadge(status) {
+  const badge = document.getElementById('status-badge');
+  const dot = document.getElementById('status-dot');
+  const text = document.getElementById('status-text');
+  
+  if (!status) {
+    status = state.isPlaying ? (state.isPaused ? 'paused' : 'playing') : (state.currentRep > 0 ? 'complete' : 'idle');
+  }
+  
+  badge.className = 'status-badge ' + status;
+  dot.className = 'status-dot' + (status === 'playing' ? ' pulse' : '');
+  
+  const labels = { idle: t('status_ready'), playing: t('status_playing'), paused: t('status_paused'), delay: t('status_delay'), complete: t('status_complete') };
+  text.textContent = labels[status] || '';
+}
+
+function updateControls() {
+  const hasFile = !!state.file;
+  const playing = state.isPlaying || state.isPaused;
+  
+  document.getElementById('btn-play').disabled = !hasFile;
+  document.getElementById('btn-stop').disabled = !playing;
+  document.getElementById('btn-restart').disabled = !playing;
+  document.getElementById('btn-back').disabled = !playing;
+  document.getElementById('btn-fwd').disabled = !playing;
+  
+  const icon = document.getElementById('play-icon');
+  if (state.isPlaying && !state.isPaused) {
+    icon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+  } else {
+    icon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+  }
+}
+
+function enableControls(on) {
+  document.getElementById('btn-play').disabled = !on;
+  document.getElementById('scrubber').disabled = !on;
+  if (!on) updateStatusBadge('idle');
+}
+
+// ═══════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════
+function formatTime(seconds) {
+  if (!isFinite(seconds) || seconds < 0) return '0:00';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+
+function showToast(msg, duration=3000) {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), duration);
+}
+
+// ═══════════════════════════════════════════
+// PWA INSTALL
+// ═══════════════════════════════════════════
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('install-banner').style.display = 'flex';
+});
+
+function installApp() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(r => {
+      if (r.outcome === 'accepted') dismissInstall();
+    });
+  }
+}
+
+function dismissInstall() {
+  document.getElementById('install-banner').style.display = 'none';
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  applyLang();
+  updateStatusBadge('idle');
+  setRepeat(10);
+  
+  // Keyboard shortcuts
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT') return;
+    if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+    if (e.code === 'KeyS') stopPlayback();
+    if (e.code === 'ArrowRight') skipForward();
+    if (e.code === 'ArrowLeft') skipBack();
+  });
+
+  // Register service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+});
+</script>
+</body>
+</html>
